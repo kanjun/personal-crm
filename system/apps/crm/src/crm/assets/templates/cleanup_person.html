@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ person.name }} — Cleanup evidence{% endblock %}
+{% block crumbs %}<nav class="crumbs"><a href="/cleanup">Cleanup progress</a><span>/</span><a href="/person/{{ person.id }}">Contact</a></nav>{% endblock %}
+{% block heading %}{{ person.name }}{% endblock %}
+{% block sub %}<p class="sub">Saved identity evidence and public research. Website findings are proposals until verified; they do not overwrite your notes.</p>{% endblock %}
+{% block content %}
+<h2>Identity findings</h2>
+{% for fact in extracted.get('facts', []) %}
+<p><strong>{{ fact.field|capitalize }}:</strong> {{ fact.value }} · {{ fact.confidence }} confidence</p>
+{% for citation in fact.citations %}<blockquote>{{ citation.quote }}</blockquote>{% endfor %}
+{% else %}<p>No supported identity findings yet.</p>{% endfor %}
+<h2>Public research</h2>
+{% for fact in researched.get('facts', []) %}
+<p><strong>{{ fact.field|capitalize }}:</strong> {{ fact.value }} · {{ fact.confidence }} confidence</p>
+{% for citation in fact.citations %}<blockquote>{{ citation.quote }} {% if citation.source_url %}<a href="{{ citation.source_url }}" target="_blank" rel="noopener noreferrer">Source</a>{% endif %}</blockquote>{% endfor %}
+{% else %}<p>No website findings yet.</p>{% endfor %}
+<p>{{ researched.get('reason', '') }}</p>
+<h2>Underlying records</h2>
+{% for item in evidence %}
+<details><summary>{{ item.kind|capitalize }}{% if item.truncated %} · excerpt{% endif %}</summary>
+<p>{{ item.context }}</p>{% if item.source_url %}<p><a href="{{ item.source_url }}" target="_blank" rel="noopener noreferrer">Open original</a></p>{% endif %}
+{% if item.id %}<p><a href="{{ url_for('cleanup_source', id=item.id) }}">Saved original record</a></p>{% endif %}
+<pre style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ item.text }}</pre>
+</details>
+{% endfor %}
+{% endblock %}

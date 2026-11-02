@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% set nav = 'search' %}
+{% block crumbs %}<nav class="crumbs"><a href="/" data-back>← People</a><span>/</span><span>Search</span></nav>{% endblock %}
+{% block title %}Search — CRM{% endblock %}
+{% block eyebrow %}Search everything{% endblock %}
+{% block heading %}<span class="accent">Search</span>{% endblock %}
+{% block sub %}<p class="sub">Every archived email, text, and calendar event; the names under a hit open that person's page. Phrases in quotes; words are ANDed; a trailing * matches prefixes.</p>{% endblock %}
+{% block content %}
+<form class="controls" method="get" action="/search">
+  <div class="searchrow">
+    <label class="search"><input type="search" name="q" value="{{ query }}" placeholder="e.g. &quot;Foo Camp&quot; dinner, or satori" autofocus /></label>
+    <button class="btn active" type="submit">search</button>
+  </div>
+</form>
+{% if query %}
+<div class="count-line"><span>{{ hits|length }} hit{{ '' if hits|length == 1 else 's' }} for “{{ query }}”</span></div>
+<div class="timeline">
+  {% for h in hits %}
+  <div class="tl hit">
+    <span class="d">{{ h.timestamp|when }}</span>
+    <span class="k {{ 'meeting' if h.kind == 'meeting' else h.direction }}">{{ 'meeting' if h.kind == 'meeting' else h.direction|lower }}</span>
+    <span class="t">{{ h.title }}{% if h.who %} <span class="sub" style="display:inline">— {% if h.who_person_id %}<a href="/person/{{ h.who_person_id }}">{{ h.who }}</a>{% else %}{{ h.who }}{% endif %}</span>{% endif %}<small>{{ h.snippet_html|safe }}</small>
+      {% if h.people %}<span class="hit__people">{% for p in h.people[:4] %}<a class="plink" href="/person/{{ p.person_id }}">{{ p.name }}</a>{% endfor %}{% if h.people|length > 4 %}<span class="quiet">+{{ h.people|length - 4 }}</span>{% endif %}</span>{% endif %}</span>
+    <span class="links">
+      {% if h.kind == 'email' %}<a href="{{ h.account|gmail_url(h.thread_id) }}" target="_blank" rel="noopener">Gmail ↗</a><a href="/record/GMAIL/{{ h.account }}/{{ h.source_id }}">original</a>
+      {% elif h.kind == 'text' %}<span class="sub">text</span>
+      {% else %}<a href="/record/GOOGLE_CALENDAR/{{ h.account }}/{{ h.source_id }}">original</a>{% endif %}
+    </span>
+  </div>
+  {% else %}
+  <div class="empty">Nothing matched.</div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

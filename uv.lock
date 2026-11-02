@@ -31,6 +31,7 @@ members = [
     "caretaker",
     "chat",
     "chat-background-tasks",
+    "crm",
     "default-workspace-template",
     "env-converge",
     "files-app",
@@ -39,6 +40,7 @@ members = [
     "host-backup",
     "mngr-cli-contract",
     "oom-priority",
+    "people-archive",
     "pytest-executable-tmp",
     "pytest-workspace-env",
     "routines",
@@ -948,6 +950,37 @@ sdist = { url = "https://files.pythonhosted.org/packages/53/8b/559ef8395eefe4ff3
 wheels = [
     { url = "https://files.pythonhosted.org/packages/05/57/d5c8333933d8079d6f5447e7f14a7f499611baa8e1c70e700537f1ee8630/cowsay_python-1.0.2-py3-none-any.whl", hash = "sha256:5d04b9444aee488e25238fd18d75ff8a88cc0f7cc3ec32edf55dc11bf5639505", size = 2788, upload-time = "2024-08-17T18:58:36.072Z" },
 ]
+
+[[package]]
+name = "crm"
+version = "0.1.0"
+source = { editable = "system/apps/crm" }
+dependencies = [
+    { name = "flask" },
+    { name = "flask-sock" },
+    { name = "imbue-common" },
+    { name = "people-archive" },
+    { name = "pydantic" },
+    { name = "werkzeug" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "ty" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "flask", specifier = ">=3.0" },
+    { name = "flask-sock", specifier = ">=0.7" },
+    { name = "imbue-common", git = "https://github.com/imbue-ai/mngr?subdirectory=libs%2Fimbue_common&rev=c1e2adcaf0a7cc26839305c832cee66c226bad0f" },
+    { name = "people-archive", editable = "system/libs/people_archive" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "werkzeug", specifier = ">=3.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ty", specifier = "==0.0.85" }]
 
 [[package]]
 name = "cryptography"
@@ -2598,6 +2631,39 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/95/67/dfffd7eb50d67fa821cd4d92cf71575ead6162930202bc40dfcedf78c38c/pendulum-3.2.0-cp314-cp314-win_arm64.whl", hash = "sha256:d53134418e04335c3029a32e9341cccc9b085a28744fb5ee4e6a8f5039363b1a", size = 253292, upload-time = "2026-01-30T11:21:54.484Z" },
     { url = "https://files.pythonhosted.org/packages/02/fb/d65db067a67df7252f18b0cb7420dda84078b9e8bfb375215469c14a50be/pendulum-3.2.0-py3-none-any.whl", hash = "sha256:f3a9c18a89b4d9ef39c5fa6a78722aaff8d5be2597c129a3b16b9f40a561acf3", size = 114111, upload-time = "2026-01-30T11:22:22.361Z" },
 ]
+
+[[package]]
+name = "people-archive"
+version = "0.1.0"
+source = { editable = "system/libs/people_archive" }
+dependencies = [
+    { name = "click" },
+    { name = "httpx" },
+    { name = "imbue-common" },
+    { name = "loguru" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "tenacity" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "ty" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "click", specifier = ">=8.1" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "imbue-common", git = "https://github.com/imbue-ai/mngr?subdirectory=libs%2Fimbue_common&rev=c1e2adcaf0a7cc26839305c832cee66c226bad0f" },
+    { name = "loguru", specifier = ">=0.7" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pyyaml", specifier = ">=6" },
+    { name = "tenacity", specifier = ">=8.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ty", specifier = "==0.0.85" }]
 
 [[package]]
 name = "pexpect"

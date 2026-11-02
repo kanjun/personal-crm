@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% from "_heatmap.html" import heatmap %}
+{% set nav = 'people' %}
+{% set s = detail.summary %}
+{% block crumbs %}<nav class="crumbs"><a href="/" data-back>← People</a><span>/</span><span>{{ s.name }}</span></nav>{% endblock %}
+{% block title %}{{ s.name }} — CRM{% endblock %}
+{% block eyebrow %}Person{% endblock %}
+{% block heading %}<span class="ed ed--line" data-field="name" data-value="{{ s.name }}">{{ s.name }}<button class="ed__pen" title="Edit name">✎</button></span>{% endblock %}
+{% block sub %}
+<p class="sub">
+  <span class="ed ed--line" data-field="title" data-value="{{ s.title }}" data-placeholder="Title, e.g. CEO">{% if s.title %}{{ s.title }}{% else %}<span class="ed__ghost">add a title</span>{% endif %}<button class="ed__pen" title="Edit title">✎</button></span>
+  {% if s.title and s.organization %}<span class="ed__sep">·</span>{% endif %}
+  <span class="ed ed--line" data-field="organization" data-value="{{ s.organization }}" data-placeholder="Organization">{% if s.organization %}{{ s.organization }}{% else %}<span class="ed__ghost">add an organization</span>{% endif %}<button class="ed__pen" title="Edit organization">✎</button></span>
+  <span class="pcard__badges" style="display:inline-flex; margin-left: 8px; vertical-align: middle;">
+    <span class="badge badge--tier tier-{{ s.tier }}">{{ ['', 'close', 'known', 'peripheral'][s.tier] }}</span>
+    {% if s.is_colleague %}<span class="badge">colleague</span>{% elif s.hand_kept_category %}<span class="badge badge--hand">{{ s.hand_kept_category }}</span>{% endif %}
+  </span>
+  {% if detail.aliases %}<br><span class="sub">also seen as {{ detail.aliases|join(', ') }}</span>{% endif %}
+  {% if s.thread_note %}<br><span class="sub thread-note">From your texts: {{ s.thread_note }}</span>{% endif %}
+</p>
+{% endblock %}
+{% block content %}
+{% if request.args.get('queued') %}
+<div class="banner">Recorded. This page updates once the background rebuild finishes (about five minutes).</div>
+{% endif %}
+{% if detail.merge_candidates %}
+<section class="dupes">
+  <div class="dupes__head">Possibly the same person as</div>
+  {% for c in detail.merge_candidates %}
+  <div class="dupe">
+    <a class="dupe__who" href="/person/{{ c.person_id }}"><b>{{ c.name }}</b><small>{{ c.primary_email or c.phones|join(', ') }} · {{ c.organization or '—' }} · last {{ c.last_contact|when }}</small></a>
+    <form method="post" action="/merge" class="dupe__actions">
+      <input type="hidden" name="a" value="{{ s.person_id }}" /><input type="hidden" name="b" value="{{ c.person_id }}" /><input type="hidden" name="back" value="/person/{{ s.person_id }}" />
+      <button class="btn btn--yes" name="decision" value="same">Same person</button>
+      <button class="btn" name="decision" value="different">Different</button>
+    </form>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% macro bullets(items) %}<ul class="dl">{% for b in items %}<li>{{ b|cite|safe }}</li>{% endfor %}</ul>{% endmacro %}
+{% macro sec(field, label, cls, items, d) %}
+<div class="sec sec--{{ cls }} ed ed--bullets" data-field="{{ field }}" data-value="{{ items|join('\n') }}" data-original="{{ 1 if d and d.written_on and field in d.edited else 0 }}">
+  <h3>{{ label }}{% if d and field in d.edited %} <span class="ed__you" title="Your words, not the model's">you</span>{% endif %}<button class="ed__pen" title="Edit">✎</button></h3>
+  {{ bullets(items) }}
+</div>
+{% endmacro %}
+{% set d = detail.dossier %}
+<section class="card dossier" data-person="{{ s.person_id }}">
+  <div class="dossier__brief">
+    <p class="brief ed ed--line" data-field="one_liner" data-value="{{ d.one_liner if d else '' }}" data-placeholder="Who is this person to you? One line." data-original="{{ 1 if d and d.written_on and 'one_liner' in d.edited else 0 }}">{{ d.one_liner if d and d.one_liner else detail.briefing }}<button class="ed__pen" title="Edit">✎</button></p>
+    <div class="tags ed ed--tags" data-field="background" data-value="{{ d.background|join(', ') if d else '' }}" data-placeholder="Roles, comma separated: founder, investor…" data-original="{{ 1 if d and d.written_on and 'background' in d.edited else 0 }}">{% for t in d.background if d %}<span class="tag tag--role">{{ t }}</span>{% endfor %}<button class="ed__pen" title="Edit roles">✎ roles</button></div>
+    <div class="tags ed ed--tags" data-field="interests" data-value="{{ d.interests|join(', ') if d else '' }}" data-placeholder="Interests, comma separated: meditation, malleable software…" data-original="{{ 1 if d and d.written_on and 'interests' in d.edited else 0 }}">{% for t in d.interests if d %}<span class="tag">{{ t }}</span>{% endfor %}<button class="ed__pen" title="Edit interests">✎ interests</button></div>
+  </div>
+  {% set facts = d.key_facts if d else () %}{% set cares = d.what_they_care_about if d else () %}{% set met = d.how_we_met if d else () %}{% set state = d.where_things_stand if d else () %}{% set watch = d.watch_out if d else () %}
+  <div class="sections sections--top">
+    {%- if facts %}{{ sec('key_facts', 'Key facts', 'facts', facts, d) }}{% endif -%}
+    {%- if cares %}{{ sec('what_they_care_about', 'Cares about', 'cares', cares, d) }}{% endif -%}
+  </div>
+  <div class="sections sections--row">
+    {%- if met %}{{ sec('how_we_met', 'How we met', 'met', met, d) }}{% endif -%}
+    {%- if state %}{{ sec('where_things_stand', 'State', 'state', state, d) }}{% endif -%}
+    {%- if watch %}{{ sec('watch_out', 'Watch out', 'watch', watch, d) }}{% endif -%}
+  </div>
+  <div class="sections sections--row">
+    <div class="sec sec--notes ed ed--text" data-field="notes" data-value="{{ d.notes if d else '' }}" data-placeholder="Anything you want to remember about them.">
+      <h3>Your notes<button class="ed__pen" title="Edit">✎</button></h3>
+      {% if d and d.notes %}<div class="notes">{{ d.notes }}</div>{% else %}<div class="empty ed__add">Add a note…</div>{% endif %}
+    </div>
+  </div>
+  <div class="ed__adders">
+    {%- if not facts %}<button class="ed__adder" data-field="key_facts">+ Key facts</button>{% endif -%}
+    {%- if not cares %}<button class="ed__adder" data-field="what_they_care_about">+ Cares about</button>{% endif -%}
+    {%- if not met %}<button class="ed__adder" data-field="how_we_met">+ How we met</button>{% endif -%}
+    {%- if not state %}<button class="ed__adder" data-field="where_things_stand">+ State</button>{% endif -%}
+    {%- if not watch %}<button class="ed__adder" data-field="watch_out">+ Watch out</button>{% endif -%}
+  </div>
+  <p class="quiet" style="margin: 10px 0 0">{% if d and d.written_on %}Written {{ d.written_on|when }} from {{ d.excerpt_count }} dated excerpts · click any date chip to see the evidence · {% elif not d %}No written dossier yet · {% endif %}click ✎ to change anything; your words stick and go to Obsidian too</p>
+</section>
+
+{% if detail.social_profiles %}
+<section class="card social-reach">
+  <div class="k quiet" style="margin-bottom: 10px">Public reach</div>
+  <div class="social-reach__rows">
+    {% for profile in detail.social_profiles %}
+    <div class="social-reach__row">
+      <a href="{{ profile.profile_url }}" target="_blank" rel="noopener"><b>{{ {'x': 'X', 'linkedin': 'LinkedIn', 'instagram': 'Instagram'}[profile.platform] }}</b> · @{{ profile.username }}</a>
+      <span>
+        {% if profile.follower_count is not none %}<b>{{ "{:,}".format(profile.follower_count) }}</b> followers{% else %}<span class="quiet">follower count queued</span>{% endif %}
+        {% if profile.connection_count is not none %} · {{ "{:,}".format(profile.connection_count) }} connections{% endif %}
+        {% if profile.is_verified %} · verified{% endif %}
+      </span>
+      <span class="links">{% if profile.source_id %}<a href="/social-source/{{ profile.source_id }}">source data</a> · {% endif %}<a href="{{ profile.profile_url }}" target="_blank" rel="noopener">profile</a></span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<div class="tabs" role="tablist">
+  <button class="tab active" data-pane="activity">Activity</button>
+  <button class="tab" data-pane="emails">Emails <span class="ct">{{ detail.email_items|length }}</span></button>
+  <button class="tab" data-pane="texts">Texts <span class="ct">{{ detail.chats|length }}</span></button>
+  <button class="tab" data-pane="meetings">Meetings <span class="ct">{{ detail.meeting_series|length }}</span></button>
+  <button class="tab" data-pane="numbers">About the numbers</button>
+</div>
+
+<section class="tabpane active" id="pane-activity">
+  <div class="card">
+    <div class="k quiet" style="margin-bottom: 8px">Activity by month · newest year first · darker = more emails, texts, and meetings</div>
+    {{ heatmap(s.heatmap, s.heatmap_peak, false) }}
+  </div>
+</section>
+
+<section class="tabpane" id="pane-emails">
+  <div class="timeline">
+    {% for item in detail.email_items %}
+    <div class="tl tl-email">
+      <span class="d">{{ item.timestamp|when }}</span>
+      <span class="k {{ item.direction }}">{{ 'you →' if item.direction == 'SENT' else '→ you' }}</span>
+      <span class="t"><a href="{{ item.account|gmail_url(item.thread_id) }}" target="_blank" rel="noopener">{{ item.title }}</a>{% if item.snippet %}<small>{{ item.snippet }}</small>{% endif %}</span>
+      <span class="links"><a href="/record/GMAIL/{{ item.account }}/{{ item.source_id }}">original</a></span>
+    </div>
+    {% else %}
+    <div class="empty">No email archived yet{% if detail.bulk_email_count %} ({{ detail.bulk_email_count }} bulk mails hidden){% endif %}.</div>
+    {% endfor %}
+    {% if detail.email_items and detail.bulk_email_count %}<p class="quiet">{{ detail.bulk_email_count }} bulk mails from this address are hidden.</p>{% endif %}
+  </div>
+</section>
+
+<section class="tabpane" id="pane-texts">
+  <div class="cards">
+    {% for c in detail.chats %}
+    <details class="pcard chat-card" data-chat-id="{{ c.chat_id }}">
+      <summary class="chat-card__summary">
+      <div class="pcard__head"><span class="pcard__name">{{ c.title or '(untitled)' }}</span><span class="pcard__badges"><span class="badge">{{ c.network }}</span>{% if c.is_group %}<span class="badge">group</span>{% endif %}</span></div>
+      <div class="pcard__org">{{ c.message_count }} messages{% if c.first_message_at %} · {{ c.first_message_at.year }} → {{ c.last_message_at|when }}{% endif %}</div>
+      {% if c.last_text %}<div class="pcard__org" style="white-space: normal; color: var(--ink); font-size: 12.5px;">“{{ c.last_text }}”</div>{% endif %}
+      <span class="chat-card__action">View full thread</span>
+      </summary>
+      <div class="chat-card__thread" aria-live="polite"></div>
+    </details>
+    {% else %}
+    <div class="empty">No text conversations.</div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="tabpane" id="pane-meetings">
+  <table class="series">
+    <thead><tr><th>Last</th><th>Title</th><th>Times</th><th>Span</th><th></th></tr></thead>
+    <tbody>
+    {% for m in detail.meeting_series %}
+    <tr>
+      <td class="mono">{{ m.last|when }}</td>
+      <td>{{ m.title }}</td>
+      <td class="mono">{{ m.count }}</td>
+      <td class="mono">{% if m.count > 1 %}{{ m.first.year }}–{{ m.last.year }}{% endif %}</td>
+      <td><a class="links" href="/record/GOOGLE_CALENDAR/{{ m.account }}/{{ m.latest_event_id }}">original</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="empty">No meetings on the calendar.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="tabpane" id="pane-numbers">
+  <div class="card numbers" style="margin-top:0">
+    <ul class="dl">
+      <li><b>In touch</b> {{ detail.first_contact|when or '—' }} to {{ s.last_contact|when or '—' }} — the earliest and latest thing in the archive with them on it.</li>
+      <li><b>Email:</b> you wrote to them {{ s.sent_count }} time{{ '' if s.sent_count == 1 else 's' }}; they wrote to you {{ s.received_count }} time{{ '' if s.received_count == 1 else 's' }}{% if detail.received_automated_count %}; plus {{ detail.received_automated_count }} automated mails from their address{% endif %}.</li>
+      <li><b>Meetings:</b> {{ detail.meeting_series|sum(attribute='count') }} on your calendar together, across {{ s.meeting_count }} different meeting series.</li>
+      <li><b>Texts:</b> {{ detail.chats|length }} conversation{{ '' if detail.chats|length == 1 else 's' }}; {{ s.text_days }} day{{ '' if s.text_days == 1 else 's' }} with messages either way.</li>
+      <li><b>Closeness score {{ s.score }}:</b> 3 per email you sent, 1 per email received, 4 per meeting series, 2 per texting day, 3 for a contact card. Tier 1 is 20 and up, tier 2 is 4 and up.</li>
+      <li><b>Addresses:</b> {% for e in detail.emails %}<span class="mono">{{ e }}</span>{% if not loop.last %}, {% endif %}{% endfor %}{% if detail.phones %}; {% for p in detail.phones %}<span class="mono">{{ p }}</span>{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</li>
+    </ul>
+  </div>
+</section>
+
+<aside class="panel" id="evidence-panel" aria-hidden="true">
+  <div class="panel__head"><span id="panel-title">Evidence</span><button class="panel__close" onclick="closePanel()" title="Close (Esc)">×</button></div>
+  <div class="panel__body" id="panel-body"></div>
+</aside>
+<script>
+  var personId = document.querySelector('.dossier').dataset.person;
+  document.querySelectorAll('.tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
+      document.querySelectorAll('.tabpane').forEach(function (p) { p.classList.remove('active'); });
+      tab.classList.add('active'); document.getElementById('pane-' + tab.dataset.pane).classList.add('active');
+    });
+  });
+  document.querySelectorAll('.chat-card').forEach(function (card) {
+    card.addEventListener('toggle', function () {
+      if (!card.open || card.dataset.loaded === '1') return;
+      var body = card.querySelector('.chat-card__thread');
+      body.textContent = 'Loading messages…';
+      fetch('/person/' + encodeURIComponent(personId) + '/chat?chat_id=' + encodeURIComponent(card.dataset.chatId))
+        .then(function (response) { if (!response.ok) throw new Error('Could not load messages'); return response.text(); })
+        .then(function (html) { body.innerHTML = html; card.dataset.loaded = '1'; })
+        .catch(function () { body.textContent = 'Could not load messages. Close and reopen to retry.'; });
+    });
+  });
+  function openEvidence(kind, month) {
+    var panel = document.getElementById('evidence-panel'); var body = document.getElementById('panel-body');
+    document.getElementById('panel-title').textContent = (kind === 'meeting' ? 'Meetings' : kind === 'note' ? 'Your notes' : kind === 'text' ? 'Texts' : 'Emails') + (month ? ' · ' + month : '');
+    body.innerHTML = '<div class="empty">Loading…</div>'; panel.classList.add('open'); panel.setAttribute('aria-hidden', 'false');
+    fetch('/evidence/' + personId + '?kind=' + encodeURIComponent(kind) + '&month=' + encodeURIComponent(month)).then(function (r) { return r.text(); }).then(function (html) { body.innerHTML = html; });
+  }
+  function closePanel() { var panel = document.getElementById('evidence-panel'); panel.classList.remove('open'); panel.setAttribute('aria-hidden', 'true'); }
+  document.querySelectorAll('.cite[role="button"]').forEach(function (chip) {
+    var kindMap = {emails: 'email', notes: 'note', meetings: 'meeting', texts: 'text', call: 'meeting'};
+    var kind = kindMap[chip.dataset.kind] || chip.dataset.kind;
+    var handler = function () { openEvidence(kind === 'other' ? 'email' : kind, chip.dataset.month); };
+    chip.addEventListener('click', handler);
+    chip.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); } });
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
+
+  // In-place editing: the pencil swaps a region for an editor; saving posts the field and reloads.
+  var editing = null;
+  function startEdit(region, field) {
+    if (editing) return;
+    var kind = region.classList.contains('ed--line') ? 'line' : region.classList.contains('ed--tags') ? 'tags' : 'text';
+    var box = document.createElement(kind === 'line' || kind === 'tags' ? 'input' : 'textarea');
+    box.className = 'ed__box'; box.value = region.dataset.value || ''; box.placeholder = region.dataset.placeholder || (kind === 'text' && !region.classList.contains('ed--text') ? 'One bullet per line; end a bullet with (2026-03 emails) to cite it' : '');
+    if (kind !== 'line' && kind !== 'tags') box.rows = Math.max(3, box.value.split('\n').length + 1);
+    var bar = document.createElement('div'); bar.className = 'ed__bar';
+    var save = document.createElement('button'); save.className = 'btn btn--yes'; save.textContent = 'Save'; save.type = 'button';
+    var cancel = document.createElement('button'); cancel.className = 'btn'; cancel.textContent = 'Cancel'; cancel.type = 'button';
+    bar.appendChild(save); bar.appendChild(cancel);
+    if (region.dataset.original === '1') {
+      var reset = document.createElement('button'); reset.className = 'btn'; reset.textContent = 'Use the written version'; reset.type = 'button';
+      reset.addEventListener('click', function () { submit(''); }); bar.appendChild(reset);
+    }
+    var hint = document.createElement('span'); hint.className = 'quiet'; hint.textContent = kind === 'text' ? 'Ctrl+Enter saves · Esc cancels' : 'Enter saves · Esc cancels'; bar.appendChild(hint);
+    var holder = document.createElement('div'); holder.className = 'ed__editor'; holder.appendChild(box); holder.appendChild(bar);
+    var shown = Array.prototype.slice.call(region.childNodes);
+    shown.forEach(function (n) { n.remove(); }); region.appendChild(holder); region.classList.add('is-editing');
+    editing = region;
+    function stop() { holder.remove(); shown.forEach(function (n) { region.appendChild(n); }); region.classList.remove('is-editing'); editing = null; }
+    function submit(value) {
+      save.disabled = true; save.textContent = 'Saving…';
+      var body = new URLSearchParams(); body.set('field', field); body.set('value', value);
+      fetch('/person/' + personId + '/edit', {method: 'POST', body: body}).then(function (r) {
+        if (!r.ok) { save.disabled = false; save.textContent = 'Save'; hint.textContent = 'Could not save (' + r.status + ')'; return; }
+        location.reload();
+      });
+    }
+    save.addEventListener('click', function () { submit(box.value); });
+    cancel.addEventListener('click', stop);
+    box.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.stopPropagation(); stop(); }
+      if (e.key === 'Enter' && (kind !== 'text' || e.ctrlKey || e.metaKey)) { e.preventDefault(); submit(box.value); }
+    });
+    box.focus();
+  }
+  document.querySelectorAll('.ed .ed__pen, .ed .ed__add').forEach(function (pen) {
+    pen.addEventListener('click', function (e) { e.preventDefault(); var region = pen.closest('.ed'); startEdit(region, region.dataset.field); });
+  });
+  document.querySelectorAll('.ed__adder').forEach(function (adder) {
+    adder.addEventListener('click', function () {
+      var region = document.createElement('div'); region.className = 'sec sec--new ed ed--bullets'; region.dataset.field = adder.dataset.field; region.dataset.value = '';
+      var h = document.createElement('h3'); h.textContent = adder.textContent.replace('+ ', ''); region.appendChild(h);
+      adder.parentNode.parentNode.insertBefore(region, adder.parentNode); startEdit(region, adder.dataset.field);
+    });
+  });
+</script>
+{% endblock %}

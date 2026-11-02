@@ -1,0 +1,17 @@
+{# Year-by-month activity grid, GitHub style: rows are years, columns January..December. #}
+{% macro heatmap(rows, peak, is_compact) %}
+<div class="heat {% if is_compact %}heat--compact{% endif %}" title="Emails and meetings per month">
+  {% if not is_compact %}
+  <div class="heat__row heat__row--head"><span class="heat__y"></span>{% for m in ['J','F','M','A','M','J','J','A','S','O','N','D'] %}<span class="heat__m">{{ m }}</span>{% endfor %}</div>
+  {% endif %}
+  {% for row in rows %}
+  <div class="heat__row">
+    <span class="heat__y">{% if not is_compact %}{{ row.year }}{% else %}{{ row.year|string|truncate(4, true, '')|replace('20', "'") }}{% endif %}</span>
+    {% for n in row.months %}
+    {% set level = 0 if n == 0 else (1 if n <= peak * 0.15 else (2 if n <= peak * 0.4 else (3 if n <= peak * 0.7 else 4))) %}
+    <span class="heat__c l{{ level }}" title="{{ row.year }}-{{ '%02d' % loop.index }}: {{ n }}"></span>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endmacro %}

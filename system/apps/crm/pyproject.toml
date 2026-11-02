@@ -1,0 +1,41 @@
+[project]
+name = "crm"
+version = "0.1.0"
+description = "The CRM: people resolved from the archive, their history, and search across every source"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.0",
+    "imbue-common",
+    "people-archive",
+    "pydantic>=2.0",
+    "flask-sock>=0.7",
+    "werkzeug>=3.0",
+]
+
+[project.scripts]
+crm = "crm.runner:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/crm"]
+
+[dependency-groups]
+dev = [
+    # Used by test_no_type_errors in the ratchets, pinned to the version the shell and chat use.
+    "ty==0.0.85",
+]
+
+# Makes this directory ty's project; without a [tool.ty] table ty keeps searching upward.
+[tool.ty]
+
+# categories already had violations here, so they are ignored rather than failing
+# test_no_type_errors. Every other rule is enforced. Follow-up: fix the violations and
+[tool.ty.rules]
+call-non-callable = "ignore"
+deprecated = "ignore"
+invalid-argument-type = "ignore"
+invalid-return-type = "ignore"

@@ -1,0 +1,6 @@
+enabled = true
+title = "CRM refresh"
+what = "Pulls new email, contacts, calendar, texts and notes into your CRM and updates each person's page."
+every = "2h"
+command = ["bash", "system/scripts/crm_refresh.sh"]
+retry_after = "10m"

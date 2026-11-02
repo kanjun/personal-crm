@@ -1,0 +1,6 @@
+enabled = false
+title = "Crm social private discovery"
+what = "uv run people-archive discover-social-private --store data/.apps/crm/archive.sqlite --limit 1000"
+every = "1h"
+command = ["uv", "run", "people-archive", "discover-social-private", "--store", "data/.apps/crm/archive.sqlite", "--limit", "1000"]
+retry_after = "10m"

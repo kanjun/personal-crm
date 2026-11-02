@@ -1,0 +1,50 @@
+[project]
+name = "people-archive"
+version = "0.1.0"
+description = "The raw archive behind the CRM: pulls Gmail, Google Contacts, and Google Calendar into SQLite, indexes every interaction for search, and resolves handles to people"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.1",
+    "pyyaml>=6",
+    "httpx>=0.27",
+    "imbue-common",
+    "loguru>=0.7",
+    "pydantic>=2.0",
+    "tenacity>=8.0",
+]
+
+[project.scripts]
+people-archive = "people_archive.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/people_archive"]
+
+[dependency-groups]
+dev = [
+    # Used by test_no_type_errors in the ratchets, pinned to the version the shell and chat use.
+    "ty==0.0.85",
+]
+
+# Makes this directory ty's project; without a [tool.ty] table ty keeps searching upward.
+[tool.ty]
+
+# categories already had violations here, so they are ignored rather than failing
+# test_no_type_errors. Every other rule is enforced. Follow-up: fix the violations and
+[tool.ty.rules]
+deprecated = "ignore"
+invalid-argument-type = "ignore"
+invalid-assignment = "ignore"
+invalid-return-type = "ignore"
+no-matching-overload = "ignore"
+not-subscriptable = "ignore"
+
+# Also part of the baseline: notes_pull.py uses a backslash inside an f-string, which
+# parses only on Python 3.12+. The workspace runs 3.12, but requires-python says >=3.11,
+# so ty is told the real interpreter version rather than reporting a syntax error.
+[tool.ty.environment]
+python-version = "3.12"

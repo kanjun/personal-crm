@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Cleanup progress — CRM{% endblock %}
+{% block heading %}Cleanup <span class="accent">progress</span>{% endblock %}
+{% block sub %}<p class="sub">GPT-only research. {{ state }}. {% if enabled %}Approved identity corrections take effect on refresh.{% else %}Changes are held for verification.{% endif %}</p>{% endblock %}
+{% block content %}
+<section>
+  <h2>People</h2>
+  <p>{{ counts.people.values()|sum }} entries in this run.</p>
+  {% for status, count in counts.people.items() %}<p>{{ status|replace('_', ' ')|capitalize }}: {{ count }}</p>{% endfor %}
+  <h2>Possible duplicates</h2>
+  {% for status, count in counts.pairs.items() %}<p>{{ status|replace('_', ' ')|capitalize }}: {{ count }}</p>{% endfor %}
+  <h2>Approved decisions</h2>
+  {% for kind, count in counts.decisions.items() %}<p>{{ {'NAME': 'Supported name decisions', 'SAME': 'Same-person decisions', 'DIFFERENT': 'Different-person decisions'}.get(kind, kind) }}: {{ count }}</p>{% else %}<p>No approved decisions yet.</p>{% endfor %}
+  <h2>Recently processed entries</h2>
+  {% for entry in entries %}<p><a href="{{ url_for('cleanup_person', person_id=entry.id) }}">{{ entry.name }}</a> · {{ entry.status }} · <a href="/person/{{ entry.id }}">Contact</a></p>{% else %}<p>Results will appear as batches finish.</p>{% endfor %}
+</section>
+<script>setTimeout(function () { location.reload(); }, 30000);</script>
+{% endblock %}

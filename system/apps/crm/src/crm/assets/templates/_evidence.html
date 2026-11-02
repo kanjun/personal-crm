@@ -1,0 +1,10 @@
+{% if items %}
+{% for it in items %}
+<article class="ev ev--{{ it.kind }}">
+  <div class="ev__head"><span class="cite cite--{{ it.kind }}">{{ it.when|when if it.when else 'undated' }} {{ it.kind }}</span> <b>{{ it.title }}</b>{% if it.link %} <a href="{{ it.link }}" target="_blank" rel="noopener">open ↗</a>{% endif %}</div>
+  <pre class="ev__body">{{ it.body }}</pre>
+</article>
+{% endfor %}
+{% else %}
+<div class="empty">Nothing of that kind in {{ month or 'the archive' }} for this person.</div>
+{% endif %}

@@ -1,0 +1,60 @@
+format = "v2"
+
+[template]
+slug = "personal-crm"
+title = "Personal CRM"
+description = "Everyone you've interacted with, pulled from your email, calendar, contacts and messages into one searchable people list with full history"
+thumbnail = "template.svg"
+version = "v1"
+
+[recipe]
+include = ["system/apps/crm", "system/supervisord.conf.d/crm.conf", "system/supervisord.conf.d/crm_cleanup.conf", "system/libs/people_archive", "system/scripts/crm_refresh.sh", "system/routines/crm-refresh.toml", "system/routines/crm-social-enrichment.toml", "system/routines/crm-social-private-discovery.toml", ".agents/skills/crm-cleanup", "pyproject.toml", "uv.lock"]
+data_include = []
+exclude = ["data/.apps/crm", "data/.tasks/crm-cleanup", "data/.state", "system/services/tailscale", "system/routines/gmail-sync.toml", "system/scripts/push_vault_to_mac.py", "other publisher apps", "publisher-specific Codex archive and authentication", "publisher entry and thumbnail in the stock base public template catalog"]
+modification_rules = ["Use one CRM settings file with documented environment overrides; all three optional features default off.", "Replace publisher identities, accounts and pronouns with neutral user wording and configurable owner context; self addresses come only from explicit settings.", "Replace colleague domains with an empty configurable list.", "Remove assumed devices, network hosts, proxy routes and remote dossier copies; require explicit source paths and disable dossier export without a folder.", "Make hand-kept contacts optional with no default file.", "Use the container timezone for display unless a timezone setting is supplied; retain UTC raw timestamps.", "Replace real people and profile handles in examples and tests with invented examples.", "Remove publisher-specific migration history, decisions, approvals and operational anecdotes.", "Gate Beeper before network access; require configured host, port and token only when enabled.", "Keep cleanup autostart false, hide its UI when disabled, gate cleanup commands and overlays, and make protected-page data optional.", "Keep both standalone social routines disabled; gate social commands and execute optional refresh stages only when explicitly enabled.", "Use a configurable authenticated Codex executable for optional GPT features instead of a private captured installation.", "Make the refresh self-contained with resumable historical Gmail and bounded history sync, preserve source logs, and eliminate unsafe positional shell argument access.", "Extend only the clean base dependency configuration with the people-archive workspace source and CRM dependencies; regenerate the clean base lockfile instead of copying unrelated source app wiring.", "Reconcile stale archive ratchet snapshots to the source-inherited counts only; introduce no additional violations."]
+
+[requirements.llm]
+method = "keyless"
+note = "Claude judges use claude -p with the adopter subscription. Optional GPT cleanup and social discovery use authenticated Codex; no provider fallback. Change Claude model/auth calls for a keyed environment."
+
+[[requirements.adaptation]]
+summary = "Configure your identities before importing data"
+resolution = "Create data/.apps/crm/settings.json from settings.example.json, set accounts and self_addresses, and optionally owner_name, owner_context, colleague_domains and outreach_context."
+
+[[requirements.adaptation]]
+summary = "Initial archive is empty"
+resolution = "Connect Gmail read, Calendar read and Contacts read, then run the enabled refresh. The first full Gmail walk on a large mailbox takes days at approximately two requests per second; rebuilds are disk-heavy."
+
+[[requirements.adaptation]]
+summary = "OPTIONAL Beeper credentials and route; off by default"
+resolution = "Only when beeper_enabled=true, supply your own network route, beeper_host, beeper_port and beeper_token or BEEPER_ACCESS_TOKEN. No activation secret is required while disabled."
+
+[[requirements.adaptation]]
+summary = "OPTIONAL cleanup authentication; off by default"
+resolution = "Only when cleanup_enabled=true, configure codex_command with authenticated Codex (tested command shape 0.154.0); review copied-archive results before enabling the application ledger and manually starting crm_cleanup. cleanup_protected_path is optional."
+
+[[requirements.adaptation]]
+summary = "OPTIONAL social credentials and permissions; off by default"
+resolution = "Only when social_enabled=true, connect a custom Bright Data service with its API key for api.brightdata.com. GPT discovery requires Codex/OpenAI authentication (an OpenAI API key or supported subscription login). These secrets and permissions are optional and must not be requested on activation. Both social routines ship disabled; optional stages can run through refresh."
+
+[[requirements.adaptation]]
+summary = "OPTIONAL local notes and dossier paths"
+resolution = "Leave dossier_folder and hand_kept_contacts_path empty to disable them. Configure notes_folders, notes_device and file-read permission only for notes imports; Apple Notes additionally requires apple_notes_container and an explicit selection JSON. Import Granola only from an explicitly supplied export."
+
+[[requirements.permission]]
+scope = "google-gmail-api"
+permission = "google-gmail-read-all"
+note = "Read Gmail message bodies, labels, history and profile for the configured accounts."
+
+[[requirements.permission]]
+scope = "google-calendar-api"
+permission = "google-calendar-read-all"
+note = "Read calendars and event history for the configured accounts."
+
+[[requirements.permission]]
+scope = "google-people-api"
+permission = "google-people-read-all"
+note = "Read Google Contacts and other contacts for the configured accounts."
+[environment]
+apt = []
+env_d_units = []

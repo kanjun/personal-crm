@@ -1,0 +1,16 @@
+{% if messages %}
+<div class="chat-messages" role="list" aria-label="Full message thread">
+  {% for message in messages %}
+  {% if loop.first or message.timestamp.date() != loop.previtem.timestamp.date() %}
+  <div class="chat-messages__date">{{ message.timestamp|when }}</div>
+  {% endif %}
+  <div class="chat-message {{ 'chat-message--sent' if message.is_sender else 'chat-message--received' }}" role="listitem">
+    <span class="chat-message__time" title="{{ message.timestamp.isoformat() }}">{{ message.timestamp.strftime('%H:%M') }}</span>
+    <span class="chat-message__sender">{{ 'You' if message.is_sender else (message.sender_name or 'Them') }}</span>
+    <span class="chat-message__text">{{ message.text if message.text else '[Attachment or non-text message]' }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">No messages archived in this conversation.</div>
+{% endif %}

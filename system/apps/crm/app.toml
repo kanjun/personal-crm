@@ -1,0 +1,15 @@
+name = "crm"
+display_name = "CRM"
+icon = "icon.svg"
+priority = "user"
+program = "crm"
+# Does work with no window open: warm-up and cache-refresh threads, plus a detached people-archive resolve process.
+stop_when_no_windows = false
+
+# The overnight GPT identity-cleanup job (autostart=false) belongs to the CRM.
+[wiring]
+programs = ["crm_cleanup"]
+
+[[references]]
+path = "system/libs/people_archive"
+note = "CRM archive, identity cleanup, and the privately pinned Codex adapter."

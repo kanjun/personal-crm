@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% set nav = 'lists' %}
+{% block crumbs %}<nav class="crumbs"><a href="/" data-back>← People</a><span>/</span><span>Outreach list</span></nav>{% endblock %}
+{% block title %}Outreach list — CRM{% endblock %}
+{% block eyebrow %}Outreach list{% endblock %}
+{% block heading %}Outreach <span class="accent">list</span>{% endblock %}
+{% block sub %}
+<p class="sub">Everyone with reach, or who matches your outreach topic. Grouped by why they're here; a person shows in the first group they fit. Tick to include; the export holds only ticked people.</p>
+<div class="stats">
+  <div class="stat"><span class="num" id="included-count">{{ launch.included_count }}</span><span class="lbl">included</span></div>
+  <div class="stat"><span class="num">{{ launch.candidate_count }}</span><span class="lbl">proposed</span></div>
+  <div class="stat"><span class="num">{{ '{:,}'.format(launch.tagged_count) }}</span><span class="lbl">people tagged so far</span></div>
+  <a class="btn" href="/lists/outreach.csv" style="align-self:center">Export included (CSV)</a>
+</div>
+{% endblock %}
+{% block content %}
+{% for key, label, people in launch.groups %}
+<h2 class="grp grp--{{ key }}">{{ label }} <span class="sub" style="display:inline">· {{ people|length }}</span></h2>
+<div class="lrows">
+  {% for p in people %}
+  <div class="lrow {% if p.decision == 'include' %}is-in{% elif p.decision == 'exclude' %}is-out{% endif %}" data-person="{{ p.person_id }}">
+    <label class="lrow__tick"><input type="checkbox" {% if p.decision == 'include' %}checked{% endif %} onchange="decide(this)" /></label>
+    <a class="lrow__who" href="/person/{{ p.person_id }}"><b>{{ p.name }}</b><small>{{ p.organization or p.primary_email }}{% if p.x_username %} · <a href="https://x.com/{{ p.x_username }}" target="_blank" rel="noopener">@{{ p.x_username }}</a>{% endif %}</small></a>
+    <span class="lrow__why">{{ p.why }}</span>
+    <span class="lrow__tags">{% for t in p.background %}<span class="tag tag--role">{{ t }}</span>{% endfor %}{% for t in p.interests[:3] %}<span class="tag">{{ t }}</span>{% endfor %}</span>
+    <span class="lrow__meta"><span class="badge badge--tier tier-{{ p.tier }}">{{ ['', 'close', 'known', 'peripheral'][p.tier] }}</span>{% if p.reach != 'none' %}<span class="badge badge--reach">{{ p.reach }} reach</span>{% endif %}<span class="last">{{ p.last_contact|when }}</span></span>
+    <button class="btn btn--x" title="Not for this list" onclick="exclude(this)">×</button>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">Nobody tagged yet. Run the optional tagging pass to build outreach suggestions.</div>
+{% endfor %}
+<script>
+  function post(personId, decision) {
+    return fetch('/lists/outreach/decide', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'person_id=' + encodeURIComponent(personId) + '&decision=' + decision});
+  }
+  function decide(box) {
+    var row = box.closest('.lrow'); var d = box.checked ? 'include' : '';
+    row.classList.toggle('is-in', box.checked); row.classList.remove('is-out');
+    post(row.dataset.person, d).then(function () { var n = document.getElementById('included-count'); n.textContent = document.querySelectorAll('.lrow.is-in').length; });
+  }
+  function exclude(btn) {
+    var row = btn.closest('.lrow'); row.classList.add('is-out'); row.classList.remove('is-in'); row.querySelector('input').checked = false;
+    post(row.dataset.person, 'exclude').then(function () { var n = document.getElementById('included-count'); n.textContent = document.querySelectorAll('.lrow.is-in').length; });
+  }
+</script>
+{% endblock %}

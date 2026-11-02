@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% set nav = 'merges' %}
+{% block crumbs %}<nav class="crumbs"><a href="/" data-back>← People</a><span>/</span><span>Duplicates</span></nav>{% endblock %}
+{% block title %}Possible duplicates — CRM{% endblock %}
+{% block eyebrow %}Review{% endblock %}
+{% block heading %}Possibly the <span class="accent">same person</span>{% endblock %}
+{% block sub %}<p class="sub">Pairs that share a full name but have no hard evidence linking them. A judge reads each pair's emails, signatures, and meetings and settles the clear ones; what is left needs you.</p>{% endblock %}
+{% block content %}
+{% if request.args.get('queued') %}<div class="banner">Recorded and taken off this list. {% if request.args.get('queued') == 'same' %}Their records join into one person{% else %}They stay apart{% endif %} once the background rebuild finishes (about five minutes).</div>
+{% elif resolve_state %}<div class="banner">Rebuilding who-is-who in the background (about five minutes) — decisions you make now are folded in.</div>{% endif %}
+{% set unsure = pairs|selectattr('lean', 'equalto', 'unsure')|list %}
+{% set unjudged = pairs|selectattr('lean', 'equalto', '')|list %}
+<div class="count-line"><span>{{ pairs|length }} pair{{ '' if pairs|length == 1 else 's' }} for you{% if unjudged %} · {{ unjudged|length }} not yet read by the judge{% endif %}</span><span>{% if review.judged_same or review.judged_different %}{{ review.judged_same|length }} joined and {{ review.judged_different|length }} kept apart for you, listed below{% endif %}</span></div>
+<div class="rows">
+  {% for pair in pairs %}
+  <div class="row dupe-row" style="grid-template-columns: 1fr auto;">
+    <div class="pair">
+      <a href="/person/{{ pair.person_a.person_id }}"><span class="name">{{ pair.person_a.name }}<small>{{ pair.person_a.primary_email or pair.person_a.phones|join(', ') }} · {{ pair.person_a.organization }} · last {{ pair.person_a.last_contact|when }}</small></span></a>
+      <span class="eq">=?</span>
+      <a href="/person/{{ pair.person_b.person_id }}"><span class="name">{{ pair.person_b.name }}<small>{{ pair.person_b.primary_email or pair.person_b.phones|join(', ') }} · {{ pair.person_b.organization }} · last {{ pair.person_b.last_contact|when }}</small></span></a>
+    </div>
+    <form method="post" action="/merge" class="dupe__actions">
+      <input type="hidden" name="a" value="{{ pair.person_a.person_id }}" /><input type="hidden" name="b" value="{{ pair.person_b.person_id }}" /><input type="hidden" name="back" value="/merges" />
+      <button class="btn btn--yes" name="decision" value="same">Same person</button>
+      <button class="btn" name="decision" value="different">Different</button>
+    </form>
+    {% if pair.lean %}<div class="lean lean--{{ pair.lean }}"><b>{% if pair.lean == 'unsure' %}Judge unsure{% else %}Judge leans {{ pair.lean }} ({{ (pair.lean_confidence * 100)|round|int }}%){% endif %}</b> — {{ pair.lean_why }}</div>{% endif %}
+  </div>
+  {% else %}
+  <div class="empty">Nothing left for you to judge.</div>
+  {% endfor %}
+</div>
+{% if review.judged_same or review.judged_different %}
+<details class="settled">
+  <summary>Settled for you: {{ review.judged_same|length }} joined, {{ review.judged_different|length }} kept apart</summary>
+  <p class="settled__note">Each call comes with its reason. To undo one, open the person's page after the rebuild and mark the split there, or tell me.</p>
+  {% for j in review.judged_same %}<div class="settled__row"><span class="lean lean--same">joined</span><b>{{ j.name }}</b><small>{{ j.handles_a|join(', ') }} + {{ j.handles_b|join(', ') }}</small><span class="settled__why">{{ j.reason }}</span></div>{% endfor %}
+  {% for j in review.judged_different %}<div class="settled__row"><span class="lean lean--different">kept apart</span><b>{{ j.name }}</b><small>{{ j.handles_a|join(', ') }} vs {{ j.handles_b|join(', ') }}</small><span class="settled__why">{{ j.reason }}</span></div>{% endfor %}
+</details>
+{% endif %}
+{% endblock %}

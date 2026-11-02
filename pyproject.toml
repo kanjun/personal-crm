@@ -108,6 +108,7 @@ members = ["system/libs/*", "system/services/*", "system/apps/*"]
 exclude = ["system/libs/workspace_ui", "system/apps/terminal_pty", "system/apps/datalib"]
 
 [tool.uv.sources]
+people-archive = { workspace = true }
 bootstrap = { workspace = true }
 github-sync = { workspace = true }
 env-converge = { workspace = true }

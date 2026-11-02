@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% set nav = '' %}
+{% block crumbs %}<nav class="crumbs"><a href="/" data-back>← People</a><span>/</span><span>Original record</span></nav>{% endblock %}
+{% block title %}{{ view.title or view.record_id }} — original{% endblock %}
+{% block eyebrow %}Original record · {{ view.source|lower|replace('_', ' ') }} · {{ view.account }}{% endblock %}
+{% block heading %}{{ view.title or '(untitled)' }}{% endblock %}
+{% block content %}
+{% if view.text %}
+<h2>Text</h2>
+<pre class="body">{{ view.text }}</pre>
+{% endif %}
+<h2>Raw record as archived</h2>
+<pre class="raw">{{ view.raw_json }}</pre>
+{% endblock %}

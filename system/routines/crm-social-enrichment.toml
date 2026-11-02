@@ -1,0 +1,6 @@
+enabled = false
+title = "CRM social enrichment"
+what = "Fills in details from the social profiles discovery found, a batch at a time."
+every = "1h"
+command = ["uv", "run", "people-archive", "enrich-social", "--counts-only", "--limit", "18", "--workers", "3"]
+retry_after = "10m"

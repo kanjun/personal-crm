@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "_heatmap.html" import heatmap %}
+{% set nav = 'people' %}
+{% block title %}People — CRM{% endblock %}
+{% block sub %}
+<div class="stats">
+  <div class="stat"><span class="num">{{ page.human_count + page.colleague_count }}</span><span class="lbl">people</span></div>
+  <div class="stat"><span class="num">{{ page.tier_counts.get(1, 0) }}</span><span class="lbl">close</span></div>
+  <div class="stat"><span class="num">{{ page.tier_counts.get(2, 0) }}</span><span class="lbl">known</span></div>
+  <div class="stat"><span class="num">{{ page.colleague_count }}</span><span class="lbl">colleagues</span></div>
+  {% for account, count in status.message_count_by_account.items() %}
+  <div class="stat"><span class="num">{{ '{:,}'.format(count) }}</span><span class="lbl">emails · {{ account.split('@')[0] }}</span></div>
+  {% endfor %}
+  <div class="stat"><span class="num">{{ '{:,}'.format(status.calendar_event_count) }}</span><span class="lbl">calendar events</span></div>
+</div>
+{% endblock %}
+{% block content %}
+<form class="controls" method="get" action="/">
+  <div class="searchrow">
+    <label class="search">
+      <input type="search" name="q" value="{{ filters.query }}" placeholder="Filter people by name, email, company…" />
+    </label>
+    <input type="hidden" name="tier" value="{{ filters.tier or '' }}" />
+    <input type="hidden" name="group" value="{{ filters.group }}" />
+    <button class="btn {% if filters.sort == 'score' %}active{% endif %}" name="sort" value="score">by closeness</button>
+    <button class="btn {% if filters.sort == 'recent' %}active{% endif %}" name="sort" value="recent">by recency</button>
+  </div>
+  <div class="chips">
+    {% set base = '?q=' ~ (filters.query|urlencode) ~ '&sort=' ~ filters.sort ~ ('&group=' ~ filters.group if filters.group else '') %}
+    <a class="chip {% if filters.tier is none %}active{% endif %}" href="{{ base }}">All tiers</a>
+    <a class="chip {% if filters.tier == 1 %}active{% endif %}" href="{{ base }}&tier=1">Close <span class="ct">{{ page.tier_counts.get(1, 0) }}</span></a>
+    <a class="chip {% if filters.tier == 2 %}active{% endif %}" href="{{ base }}&tier=2">Known <span class="ct">{{ page.tier_counts.get(2, 0) }}</span></a>
+    <a class="chip {% if filters.tier == 3 %}active{% endif %}" href="{{ base }}&tier=3">Peripheral <span class="ct">{{ page.tier_counts.get(3, 0) }}</span></a>
+    {% set gbase = '?q=' ~ (filters.query|urlencode) ~ '&sort=' ~ filters.sort ~ ('&tier=' ~ filters.tier if filters.tier else '') %}
+    <span class="chip-gap"></span>
+    <a class="chip {% if not filters.group %}active{% endif %}" href="{{ gbase }}">Everyone <span class="ct">{{ page.human_count + page.colleague_count }}</span></a>
+    <a class="chip {% if filters.group == 'network' %}active{% endif %}" href="{{ gbase }}&group=network">Network <span class="ct">{{ page.human_count }}</span></a>
+    <a class="chip {% if filters.group == 'colleagues' %}active{% endif %}" href="{{ gbase }}&group=colleagues">Colleagues <span class="ct">{{ page.colleague_count }}</span></a>
+  </div>
+  {% set bbase = '?q=' ~ (filters.query|urlencode) ~ '&sort=' ~ filters.sort ~ ('&tier=' ~ filters.tier if filters.tier else '') ~ ('&group=' ~ filters.group if filters.group else '') %}
+  <div class="chips chips--by">
+    <span class="chips__lbl">Group by</span>
+    <a class="chip {% if not filters.group_by %}active{% endif %}" href="{{ bbase }}">None</a>
+    {% for key, label in group_by_options.items() %}
+    <a class="chip {% if filters.group_by == key %}active{% endif %}" href="{{ bbase }}&by={{ key }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</form>
+
+{% macro card(p) %}
+  <a class="pcard tier-{{ p.tier }}" href="/person/{{ p.person_id }}">
+    <div class="pcard__head">
+      <span class="pcard__name">{{ p.name }}</span>
+      <span class="pcard__badges">{% if p.is_colleague %}<span class="badge">colleague</span>{% elif p.hand_kept_category %}<span class="badge badge--hand">{{ p.hand_kept_category }}</span>{% endif %}<span class="badge badge--tier tier-{{ p.tier }}">{{ ['', 'close', 'known', 'peripheral'][p.tier] }}</span></span>
+    </div>
+    <div class="pcard__org">{% if p.organization or p.title %}{{ p.organization }}{% if p.title %} · {{ p.title }}{% endif %}{% else %}<span class="pcard__email">{{ p.primary_email }}</span>{% endif %}</div>
+    {% if p.thread_note %}<div class="pcard__note">{{ p.thread_note }}</div>{% endif %}
+    {% if p.roles or p.interests %}<div class="pcard__tags">{% for t in p.roles[:2] %}<span class="tag tag--role">{{ t }}</span>{% endfor %}{% for t in p.interests[:4] %}<span class="tag">{{ t }}</span>{% endfor %}</div>{% endif %}
+    {{ heatmap(p.heatmap, p.heatmap_peak, true) }}
+    <div class="pcard__foot">
+      <span class="last">last {{ p.last_contact|when }}</span>
+    </div>
+  </a>
+{% endmacro %}
+
+{% if filters.group_by %}
+<div class="count-line"><span>{% if filters.group_value %}{{ page.groups[0].count if page.groups else 0 }} people{% else %}{{ page.groups|length }} groups across your closest {{ page.grouped_count }}{% endif %} · by {{ group_by_options[filters.group_by]|lower }}</span><span>{% if filters.group_value %}<a href="{{ bbase }}&by={{ filters.group_by }}">← all groups</a>{% else %}someone with several tags appears under each{% endif %}</span></div>
+{% for g in page.groups %}
+<section class="pgroup">
+  <h2 class="pgroup__head"><span>{{ g.label }}</span><span class="pgroup__ct">{{ g.count }}</span>{% if g.count > g.people|length %}<a class="pgroup__all" href="{{ bbase }}&by={{ filters.group_by }}&in={{ g.key|urlencode }}">all {{ g.count }} →</a>{% endif %}</h2>
+  <div class="cards">{% for p in g.people %}{{ card(p) }}{% endfor %}</div>
+</section>
+{% else %}
+<div class="empty">Nothing to group yet{% if filters.group_by in ('role', 'interest') %} — tags arrive as people get tagged in the background{% endif %}.</div>
+{% endfor %}
+{% else %}
+<div class="count-line"><span>{{ page.total_count }} match{{ '' if page.total_count == 1 else 'es' }}</span><span>grid = last 8 years by month, darker = more emails and meetings</span></div>
+<div class="cards">
+  {% for p in page.people %}{{ card(p) }}{% else %}<div class="empty">No one matches.</div>{% endfor %}
+</div>
+{% endif %}
+{% set pages = ((page.total_count - 1) // 100) + 1 %}
+{% if pages > 1 and not filters.group_by %}
+<div class="pager">
+  {% set keep = '?q=' ~ (filters.query|urlencode) ~ '&sort=' ~ filters.sort ~ ('&tier=' ~ filters.tier if filters.tier else '') ~ ('&group=' ~ filters.group if filters.group else '') %}
+  {% if filters.page > 0 %}<a class="btn" href="{{ keep }}&page={{ filters.page - 1 }}">← previous</a>{% endif %}
+  <span class="btn">page {{ filters.page + 1 }} of {{ pages }}</span>
+  {% if filters.page + 1 < pages %}<a class="btn" href="{{ keep }}&page={{ filters.page + 1 }}">next →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}
